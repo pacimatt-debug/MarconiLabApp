@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Scheda Collaudo PRO</title>
+<meta name="theme-color" content="#1e1e1e">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&display=swap');
+
+  /* --- STILI APP (DARK MODE) --- */
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Roboto', sans-serif;
+    background-color: #121212; color: #e0e0e0;
+    display: flex; flex-direction: column; align-items: center;
+    padding-top: 60px; padding-bottom: 120px;
+  }
+
+  /* BARRE FISSE */
+  .top-bar, .bottom-bar {
+    position: fixed; left: 0; width: 100%; height: 60px;
+    background: #1e1e1e; border-color: #333; border-style: solid;
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
+  }
+  .top-bar { top: 0; border-bottom-width: 1px; }
+  .bottom-bar { bottom: 0; border-top-width: 1px; height: 70px; gap: 10px; padding: 0 10px; box-sizing: border-box;}
+
+  .sheet-container {
+    width: 96%; max-width: 1400px;
+    background-color: #1e1e1e; padding: 20px;
+    border: 1px solid #333; border-radius: 8px; margin-bottom: 20px;
+  }
+
+  h1 { font-size: 20px; color: #fff; margin: 0; text-align: center; }
+  h2 { border-bottom: 2px solid #4caf50; font-size: 16px; color: #fff; margin-top: 30px; text-transform: uppercase; }
+  p.subtitle { color: #aaa; font-size: 12px; text-align: center; margin-top: 5px; }
+
+  /* INPUT STYLE */
+  input, select, textarea {
+    background: transparent; border: none; border-bottom: 1px solid #555;
+    color: #fff; width: 100%; font-family: inherit; font-size: 14px; padding: 5px;
+  }
+  input[type="number"] { font-family: 'Courier Prime', monospace; font-weight: bold; }
+  label { font-size: 10px; color: #4caf50; font-weight: bold; display: block; margin-top: 5px; text-transform: uppercase;}
+
+  /* INFO HEADER */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+  .full-width { grid-column: span 3; }
+
+  /* TABELLA MISURE (VIDEO) */
+  .measure-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
+  .measure-table th { background: #2c2c2c; color: #fff; padding: 8px; font-size: 11px; position: sticky; top: 0; z-index: 10;}
+  .measure-table td { background: #1e1e1e; border-bottom: 1px solid #333; padding: 8px; vertical-align: middle; }
+
+  /* COLONNE */
+  .col-n { width: 30px; text-align: center; color: #777; }
+  .col-iso { width: 220px; }
+  
+  .iso-flex { display: flex; gap: 4px; }
+  .iso-flex select { background: #111; border: 1px solid #444; border-radius: 4px; text-align: center; color: #fff; height: 35px;}
+  
+  .manual-flex { display: flex; gap: 4px; }
+  .manual-flex input { text-align: center; border-bottom: 1px dotted #666; font-size: 11px; }
+
+  .col-esito { text-align: center; width: 60px; }
+  .esito-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; background: #333; display: inline-block; min-width: 30px;}
+  .esito-ok { color: #00c853; border: 1px solid #00c853; background: rgba(0,200,83,0.1); }
+  .esito-no { color: #d32f2f; border: 1px solid #d32f2f; background: rgba(211,47,47,0.1); }
+  
+  .val-ro { color:#aaa; text-align:center; border:none; font-size:12px; }
+
+  /* AUTOVALUTAZIONE GRID */
+  .eval-grid { display: grid; grid-template-columns: 4fr 0.5fr 1fr; gap: 1px; background: #444; border: 1px solid #444; margin-top:10px;}
+  .eval-head { background: #333; color:#fff; padding:10px; font-size:11px; font-weight:bold; text-align:center; }
+  .eval-cell { background: #1e1e1e; padding:10px; display:flex; flex-direction:column; justify-content:center; }
+  .weight-badge { background:#333; color:#fff; padding:4px; border-radius:4px; font-size:11px; text-align:center; width: 40px; align-self:center;}
+
+  /* BUTTONS */
+  button {
+    padding: 12px 20px; border: none; border-radius: 4px; font-weight: bold; 
+    cursor: pointer; color: #fff; text-transform: uppercase; font-size: 14px; flex: 1; max-width: 200px;
+  }
+  .btn-print { background: #00c853; }
+  .btn-add { background: #2979ff; }
+  .btn-reset { background: #d32f2f; }
+  .btn-del { background: transparent; color: #d32f2f; border: 1px solid #d32f2f; width: 30px; height: 30px; padding: 0;}
+
+  /* --- MOBILE OPTIMIZATION --- */
+  @media screen and (max-width: 900px) {
+    .info-grid { grid-template-columns: 1fr; }
+    .full-width { grid-column: span 1; }
+
+    /* Cards Misure */
+    .measure-table, thead, tbody, th, td, tr { display: block; }
+    thead { display: none; }
+    tr.measure-row {
+      background: #1e1e1e; border: 1px solid #333; margin-bottom: 20px; 
+      padding: 15px; border-radius: 8px; position: relative;
+      padding-top: 50px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .col-n { position: absolute; top: 10px; left: 10px; background: #333; color: #fff; width: 30px; height: 30px; border-radius: 50%; line-height: 30px; font-weight: bold; border: 1px solid #555;}
+    .col-del { position: absolute; top: 10px; right: 10px; }
+    
+    td { border: none; padding: 0; }
+    .col-nom { grid-column: 1 / 2; }
+    .col-mode { grid-column: 2 / 3; }
+    
+    .col-iso { grid-column: 1 / -1; background: #252525; padding: 10px !important; border-radius: 6px; }
+    .col-lim { background: transparent !important; }
+    .val-ro { text-align: left; font-size: 14px; color: #ccc; }
+
+    .col-meas { grid-column: 1 / -1; margin-top: 10px; border-top: 1px solid #333; padding-top: 10px !important;}
+    .col-meas input { font-size: 22px; text-align: center; border-bottom: 1px solid #fff; }
+    
+    .col-esito { grid-column: 1 / -1; margin-top: 5px; }
+    .esito-badge { width: 100%; padding: 10px; font-size: 16px; }
+    
+    /* Cards Valutazione */
+    .eval-grid { display: flex; flex-direction: column; background: transparent; border: none; gap: 15px;}
+    .eval-head { display: none; }
+    .eval-row-wrapper { background: #1e1e1e; border: 1px solid #333; padding: 15px; border-radius: 8px; display:flex; flex-direction:column; gap:10px; }
+    .eval-cell { padding: 0; background: transparent; }
+    .weight-badge { align-self: flex-start; margin-bottom: 5px; background: #4caf50; color: #000; width: auto; padding: 4px 8px;}
+    .grade-input { background: #252525; padding: 10px; border-radius: 6px; border: 1px solid #444; font-size: 22px; color: #ffd54f; text-align: center;}
+  }
+
+  @media screen and (min-width: 901px) {
+      .eval-row-wrapper { display: contents; }
+  }
+</style>
+
+<script>
+  // DATABASE ISO
+  const isoRanges = [3, 6, 10, 18, 30, 50, 80, 120, 180, 9999];
+  const itGrades = {
+      6: [6, 8, 9, 11, 13, 16, 19, 22, 25],
+      7: [10, 12, 15, 18, 21, 25, 30, 35, 40],
+      8: [14, 18, 22, 27, 33, 39, 46, 54, 63],
+      9: [25, 30, 36, 43, 52, 62, 74, 87, 100],
+      10: [40, 48, 58, 70, 84, 100, 120, 140, 160],
+      11: [60, 75, 90, 110, 130, 160, 190, 220, 250]
+  };
+  const deviations = {
+      'h': [0,0,0,0,0,0,0,0,0], 
+      'g': [-2,-4,-5,-6,-7,-9,-10,-12,-14], 
+      'f': [-6,-10,-13,-16,-20,-25,-30,-36,-43], 
+      'p': [6,12,15,18,22,26,32,37,43], 
+      'H': [0,0,0,0,0,0,0,0,0], 
+      'G': [2,4,5,6,7,9,10,12,14], 
+      'F': [6,10,13,16,20,25,30,36,43], 
+      'P': [-6,-12,-15,-18,-22,-26,-32,-37,-43], 
+      'JS': "sym"
+  };
+
+  function getTolerance(nom, type, letter, grade) {
+      if(!nom || nom <= 0) return null;
+      let idx = 0;
+      for(let i=0; i<isoRanges.length; i++) { if(nom <= isoRanges[i]) { idx = i; break; } }
+      const IT = itGrades[grade][idx]; 
+      const fund = deviations[letter];
+      if(!IT || !fund) return null;
+      let sup = 0, inf = 0; 
+      if (letter.toUpperCase() === 'JS') { sup = IT / 2; inf = -(IT / 2); } 
+      else {
+          if(type === 'shaft') {
+             if(['h','g','f'].includes(letter)) { sup = fund[idx]; inf = sup - IT; } 
+             else if (letter === 'p') { inf = fund[idx]; sup = inf + IT; }
+          } else {
+             if(['H','G','F'].includes(letter)) { inf = fund[idx]; sup = inf + IT; } 
+             else if (letter === 'P') { sup = fund[idx]; inf = sup - IT; }
+          }
+      }
+      return { sup: sup/1000, inf: inf/1000 };
+  }
+
+  function addRow() {
+    const tbody = document.getElementById('measureBody');
+    const n = tbody.querySelectorAll('tr').length + 1;
+    const tr = document.createElement('tr');
+    tr.className = 'measure-row';
+    tr.innerHTML = `
+      <td class="col-n">${n}</td>
+      <td class="col-nom">
+        <label>Nominale</label>
+        <input type="number" class="inp-nom" placeholder="50" oninput="calcRow(this)">
+      </td>
+      <td class="col-mode">
+        <label>Modo</label>
+        <select class="mode-select" onchange="switchMode(this)">
+            <option value="iso">ISO</option>
+            <option value="manual">Man/Sym</option>
+        </select>
+      </td>
+      <td class="col-iso">
+        <label>Tolleranza</label>
+        <div class="iso-flex">
+            <select class="iso-type" onchange="updateLetters(this)">
+                <option value="hole">Foro</option>
+                <option value="shaft">Albero</option>
+            </select>
+            <select class="iso-letter" onchange="calcRow(this)"><option>H</option></select>
+            <select class="iso-grade" onchange="calcRow(this)">
+                <option value="7" selected>7</option><option value="6">6</option><option value="8">8</option><option value="9">9</option>
+            </select>
+        </div>
+        <div class="manual-flex" style="display:none;">
+            <input type="number" class="inp-sup" placeholder="+Sup" oninput="calcRow(this)">
+            <input type="number" class="inp-inf" placeholder="-Inf" oninput="calcRow(this)">
+        </div>
+      </td>
+      <td class="col-lim">
+        <label>Max</label>
+        <input type="text" class="val-ro val-max" readonly value="-">
+      </td>
+      <td class="col-lim">
+        <label>Min</label>
+        <input type="text" class="val-ro val-min" readonly value="-">
+      </td>
+      <td class="col-meas">
+        <label>Misura</label>
+        <input type="number" class="inp-meas" placeholder="???" oninput="calcRow(this)" style="font-weight:bold; font-size:16px;">
+      </td>
+      <td class="col-esito">
+         <span class="esito-badge">-</span>
+      </td>
+      <td class="col-del">
+        <button class="btn-del" onclick="this.closest('tr').remove()">✕</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    updateLetters(tr.querySelector('.iso-type'));
+    if(window.innerWidth < 768) setTimeout(() => { tr.scrollIntoView({behavior: "smooth", block: "center"}); }, 100);
+  }
+
+  function switchMode(sel) {
+      const row = sel.closest('tr');
+      const isIso = sel.value === 'iso';
+      row.querySelector('.iso-flex').style.display = isIso ? 'flex' : 'none';
+      row.querySelector('.manual-flex').style.display = isIso ? 'none' : 'flex';
+      calcRow(sel);
+  }
+
+  function updateLetters(typeSel) {
+      const row = typeSel.closest('tr');
+      const letterSel = row.querySelector('.iso-letter');
+      letterSel.innerHTML = "";
+      const opts = (typeSel.value === 'hole') ? ['H','G','F','P','JS'] : ['h','g','f','p','js'];
+      opts.forEach(l => {
+          const opt = document.createElement('option');
+          opt.value = l; opt.innerText = l; letterSel.appendChild(opt);
+      });
+      calcRow(typeSel);
+  }
+
+  function calcRow(el) {
+    const row = el.closest('tr');
+    if(!row) return;
+    const nom = parseFloat(row.querySelector('.inp-nom').value);
+    const mode = row.querySelector('.mode-select').value;
+    const meas = parseFloat(row.querySelector('.inp-meas').value);
+    let max = null, min = null;
+
+    if(!isNaN(nom)) {
+        if(mode === 'iso') {
+            const type = row.querySelector('.iso-type').value;
+            const letVal = row.querySelector('.iso-letter').value;
+            const grd = row.querySelector('.iso-grade').value;
+            const t = getTolerance(nom, type, letVal, grd);
+            if(t) { max = nom + t.sup; min = nom + t.inf; }
+        } else {
+            const s = parseFloat(row.querySelector('.inp-sup').value);
+            const i = parseFloat(row.querySelector('.inp-inf').value);
+            if(!isNaN(s) && !isNaN(i)) { max = nom + s; min = nom + i; }
+        }
+    }
+    
+    row.querySelector('.val-max').value = (max !== null) ? max.toFixed(3) : "-";
+    row.querySelector('.val-min').value = (min !== null) ? min.toFixed(3) : "-";
+    const badge = row.querySelector('.esito-badge');
+    badge.innerText = "-"; badge.className = "esito-badge";
+
+    if(max !== null && !isNaN(meas)) {
+        if(meas <= (max + 0.0001) && meas >= (min - 0.0001)) {
+            badge.innerText = "OK"; badge.classList.add('esito-ok');
+        } else {
+            badge.innerText = "NO"; badge.classList.add('esito-no');
+        }
+    }
+  }
+
+  function calcTotal() {
+      const w = [0.4, 0.2, 0.2, 0.2];
+      let sum = 0;
+      const inputs = document.querySelectorAll('.grade-input');
+      inputs.forEach((inp, i) => {
+          const v = parseFloat(inp.value);
+          if(!isNaN(v)) sum += v * w[i];
+      });
+      document.getElementById('finalScore').innerText = (sum > 0) ? sum.toFixed(1) + " / 10" : "- / 10";
+  }
+
+  // --- MOTORE DI GENERAZIONE PDF (JSPDF) ---
+  async function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Configurazione Font
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("SCHEDA DI COLLAUDO E VALUTAZIONE", 105, 15, { align: "center" });
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    // Dati Intestazione
+    const std = document.getElementById('stdName').value || "";
+    const cls = document.getElementById('stdClass').value || "";
+    const date = document.getElementById('stdDate').value || "";
+    const title = document.getElementById('stdTitle').value || "";
+    
+    doc.text(`Allievo: ${std}`, 14, 25);
+    doc.text(`Classe: ${cls}`, 80, 25);
+    doc.text(`Data: ${date}`, 140, 25);
+    doc.text(`Titolo Disegno: ${title}`, 14, 32);
+    
+    doc.line(14, 35, 196, 35);
+
+    // 1. TABELLA MISURE
+    doc.setFont("helvetica", "bold");
+    doc.text("1. RILEVAZIONE DIMENSIONALE", 14, 42);
+    
+    const rows = [];
+    document.querySelectorAll('.measure-row').forEach(row => {
+        const n = row.querySelector('.col-n').innerText;
+        const nom = row.querySelector('.inp-nom').value;
+        const mode = row.querySelector('.mode-select').value;
+        const meas = row.querySelector('.inp-meas').value;
+        const max = row.querySelector('.val-max').value;
+        const min = row.querySelector('.val-min').value;
+        const esito = row.querySelector('.esito-badge').innerText;
+        
+        // Ricostruzione Stringa Tolleranza per il PDF
+        let tolStr = "";
+        if(mode === 'iso') {
+            const letter = row.querySelector('.iso-letter').value;
+            const grade = row.querySelector('.iso-grade').value;
+            tolStr = `${letter}${grade}`;
+        } else {
+            const s = row.querySelector('.inp-sup').value;
+            const i = row.querySelector('.inp-inf').value;
+            if(s && i) tolStr = `${s} / ${i}`;
+        }
+
+        rows.push([n, nom, tolStr, max, min, meas, esito]);
+    });
+
+    doc.autoTable({
+        startY: 45,
+        head: [['N', 'Nominale', 'Toll.', 'Max', 'Min', 'Misura', 'Esito']],
+        body: rows,
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 2, halign: 'center' },
+        headStyles: { fillColor: [40, 40, 40] }
+    });
+
+    let finalY = doc.lastAutoTable.finalY + 10;
+
+    // 2. AUTOVALUTAZIONE
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("2. AUTOVALUTAZIONE", 14, finalY);
+    
+    const grades = document.querySelectorAll('.grade-input');
+    const finalScore = document.getElementById('finalScore').innerText;
+    
+    const evalData = [
+        ["PRECISIONE DIMENSIONALE", "Rispetto quote e tolleranze", "40%", grades[0].value || "-"],
+        ["FINITURA SUPERFICIALE", "Rugosita', segni, vibrazioni", "20%", grades[1].value || "-"],
+        ["GEOMETRIA E FORMA", "Conicita', ovalizzazione, centratura", "20%", grades[2].value || "-"],
+        ["SICUREZZA E PULIZIA", "Sbavatura, DPI, Ordine", "20%", grades[3].value || "-"]
+    ];
+
+    doc.autoTable({
+        startY: finalY + 3,
+        head: [['Criterio', 'Dettagli', 'Peso', 'Voto']],
+        body: evalData,
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: { 0: { fontStyle: 'bold' } },
+        foot: [['', '', 'TOTALE:', finalScore]],
+        footStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 11, halign: 'right' }
+    });
+    
+    finalY = doc.lastAutoTable.finalY + 10;
+    
+    // 3. NOTE
+    doc.setFontSize(12);
+    doc.text("3. NOTE STUDENTE", 14, finalY);
+    const notes = document.getElementById('studentNotes').value;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    // Gestione testo lungo note
+    const splitNotes = doc.splitTextToSize(notes, 180);
+    doc.text(splitNotes, 14, finalY + 7);
+
+    // Salvataggio
+    doc.save("Scheda_Collaudo.pdf");
+  }
+
+  function resetSheet() { if(confirm("Cancellare tutto?")) location.reload(); }
+</script>
+</head>
+<body onload="addRow(); addRow();">
+
+<div class="top-bar">
+    <span style="color:#fff; font-weight:bold;">PACINILAB PRO</span>
+</div>
+
+<div class="sheet-container">
+    <div style="text-align:center;">
+        <h1>SCHEDA DI COLLAUDO</h1>
+        <p class="subtitle">Compila e scarica il PDF</p>
+    </div>
+    
+    <div class="info-grid" style="margin-top:20px;">
+        <div class="full-width"><label>Titolo Disegno</label><input type="text" id="stdTitle"></div>
+        <div><label>Allievo</label><input type="text" id="stdName"></div>
+        <div><label>Classe</label><input type="text" id="stdClass"></div>
+        <div><label>Data</label><input type="date" id="stdDate"></div>
+    </div>
+
+    <h2>1. Rilevazione Dimensionale</h2>
+    <table class="measure-table">
+        <thead>
+            <tr>
+                <th class="col-n">N°</th>
+                <th class="col-nom">NOMINALE</th>
+                <th class="col-mode">MODO</th>
+                <th class="col-iso">TOLLERANZA</th>
+                <th class="col-lim">MAX</th>
+                <th class="col-lim">MIN</th>
+                <th class="col-meas">MISURA</th>
+                <th class="col-esito">ESITO</th>
+                <th class="col-del"></th>
+            </tr>
+        </thead>
+        <tbody id="measureBody">
+            </tbody>
+    </table>
+    <button onclick="addRow()" class="btn-add" style="width:100%; margin-top:10px;">+ AGGIUNGI QUOTA</button>
+
+    <h2>2. Autovalutazione</h2>
+    
+    <div class="eval-row-wrapper">
+        <div class="eval-grid">
+            <div class="eval-head" style="text-align:left;">CRITERIO</div>
+            <div class="eval-head">PESO</div>
+            <div class="eval-head">VOTO</div>
+
+            <div class="eval-cell">
+                <div class="criteria-title">PRECISIONE DIMENSIONALE</div>
+                <div class="criteria-desc">Rispetto quote e tolleranze.</div>
+            </div>
+            <div class="eval-cell" style="align-items:center;">
+                <span class="weight-badge">40%</span>
+            </div>
+            <div class="eval-cell">
+                <input type="number" class="grade-input" placeholder="-" min="0" max="10" oninput="calcTotal()">
+            </div>
+
+            <div class="eval-cell">
+                <div class="criteria-title">FINITURA SUPERFICIALE</div>
+                <div class="criteria-desc">Rugosità (Ra), assenza segni.</div>
+            </div>
+            <div class="eval-cell" style="align-items:center;">
+                <span class="weight-badge">20%</span>
+            </div>
+            <div class="eval-cell">
+                <input type="number" class="grade-input" placeholder="-" min="0" max="10" oninput="calcTotal()">
+            </div>
+
+            <div class="eval-cell">
+                <div class="criteria-title">GEOMETRIA E FORMA</div>
+                <div class="criteria-desc">Conicità, ovalizzazione.</div>
+            </div>
+            <div class="eval-cell" style="align-items:center;">
+                <span class="weight-badge">20%</span>
+            </div>
+            <div class="eval-cell">
+                <input type="number" class="grade-input" placeholder="-" min="0" max="10" oninput="calcTotal()">
+            </div>
+
+            <div class="eval-cell">
+                <div class="criteria-title">SICUREZZA E PULIZIA</div>
+                <div class="criteria-desc">Sbavatura, DPI, Ordine.</div>
+            </div>
+            <div class="eval-cell" style="align-items:center;">
+                <span class="weight-badge">20%</span>
+            </div>
+            <div class="eval-cell">
+                <input type="number" class="grade-input" placeholder="-" min="0" max="10" oninput="calcTotal()">
+            </div>
+        </div>
+        
+        <div class="final-score-box" style="background:#252525; padding:15px; text-align:right; border: 1px solid #444; border-top:none; display:flex; justify-content:flex-end; gap:10px; align-items:center;">
+            <span style="color:#aaa;">VOTO FINALE:</span>
+            <span id="finalScore" style="font-size:24px; color:#4caf50; font-weight:bold;">- / 10</span>
+        </div>
+    </div>
+
+    <h2>3. Note</h2>
+    <textarea id="studentNotes" rows="4" placeholder="Problemi riscontrati..."></textarea>
+</div>
+
+<div class="bottom-bar">
+    <button class="btn-print" onclick="generatePDF()">SCARICA PDF</button>
+    <button class="btn-reset" onclick="resetSheet()">RESET</button>
+</div>
+
+</body>
+</html>
